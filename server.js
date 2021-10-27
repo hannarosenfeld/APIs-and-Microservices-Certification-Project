@@ -30,7 +30,6 @@ mongoose.connect(process.env.MONGO_URI, {
 
 
 
-
 /////// Time Stamp Project
 
 // When users request timestamp in the url path, respond with corresponsing file
@@ -69,15 +68,11 @@ app.get("/api/:date_string", function(req, res) {
 
 
 
-
 ////// Request Header Parser Project
-
 //link to requestHeaderParser page
 app.get("/requestHeaderParser", function (req, res) {
     res.sendFile(__dirname + '/views/requestHeaderParser.html');
-});
-
-
+})
 app.get("/api/whoami", function(req, res){
     res.json({
         "ipaddress": req.connection.remoteAddress,
@@ -88,18 +83,14 @@ app.get("/api/whoami", function(req, res){
 
 
 
-
 /////// URL Shortener Project
-
 //Build a schema and model to surore saved URLS
 var ShortURL= mongoose.model('ShortURL', new mongoose.Schema({
     short_url: String,
     original_url: String,
     suffix: String
 }))
-
 var jsonParser = bodyParser.json()
-
 //parse app
 app.use(bodyParser.urlencoded({ extended: false }))
 // parse app.json
@@ -113,26 +104,21 @@ app.post("/api/shorturl", function(req, res) {
     let suffix = shortid.generate()
     let requested_url = req.body.url
     let newShortURL = suffix
-    
     let newURL = new ShortURL({
-        short_url: __dirname + "/api/shorturl/" +suffix,
+        short_url: __dirname + "/api/shorturl/" + suffix,
         original_url: requested_url,
         suffix: suffix
     })
-
     newURL.save(function(err, doc){
         if (err) return console.error(err)
-        console.log("success")
     })
     res.json({
-        "saved": true,
-        "short_url" : newURL.short_url,
+        "short_url": newURL.suffix,
         "original_url": newURL.original_url,
-        "suffix": newURL.suffix
+        //        "short_url" : newURL.short_url,
+        //        "suffix": newURL.suffix
     })
 })
-
-
 app.get("/api/shorturl/:suffix", function(req,res) {
     let generatedSuffix = req.params.suffix
     ShortURL.find({suffix: generatedSuffix}).then(function(foundUrls){
@@ -142,8 +128,8 @@ app.get("/api/shorturl/:suffix", function(req,res) {
 })
 
 
-////// General Settings for all Projects
 
+////// General Settings for all Projects
 // listen for requests :)
 var listener = app.listen(port, function () {
     console.log('Your app is listening on port ' + listener.address().port);
