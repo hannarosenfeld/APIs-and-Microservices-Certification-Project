@@ -19,11 +19,12 @@ app.get("/", function (req, res) {
     res.sendFile(__dirname + '/views/index.html');
 });
 
-
+//link to timestamp page
 app.get("/timestamp", function (req, res) {
     res.sendFile(__dirname + '/views/timestamp.html');
 });
 
+//link to requestHeaderParser page
 app.get("/requestHeaderParser", function (req, res) {
     res.sendFile(__dirname + '/views/requestHeaderParser.html');
 });
@@ -39,6 +40,15 @@ app.get("/api", function(req, res){
     res.json({
         "unix": now.getTime(),
         "utc": now.toUTCString()
+    })
+})
+
+app.get("/api/whoami", function(req, res){
+    res.json({
+        "ipaddress": req.connection.remoteAddress,
+        "language": req.headers["accept-language"],
+        "software": req.headers["user-agent"],
+//        "req-headers": req.headers
     })
 })
 
