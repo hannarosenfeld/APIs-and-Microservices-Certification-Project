@@ -29,7 +29,6 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 
 
-
 /////// Time Stamp Project
 
 // When users request timestamp in the url path, respond with corresponsing file
@@ -83,50 +82,74 @@ app.get("/api/whoami", function(req, res){
 
 
 
-/////// URL Shortener Project
-//Build a schema and model to surore saved URLS
-var ShortURL= mongoose.model('ShortURL', new mongoose.Schema({
-    short_url: String,
-    original_url: String,
-    suffix: String
-}))
-var jsonParser = bodyParser.json()
-//parse app
-app.use(bodyParser.urlencoded({ extended: false }))
-// parse app.json
-app.use(bodyParser.json())
-// When users request urlShortener in url path, respond with corresponsing file
+
+
+///URL SHORTENER
 app.get("/urlShortener", function (req, res) {
     res.sendFile(__dirname + '/views/urlShortener.html');
 });
 
-app.post("/api/shorturl", function(req, res) {
-    let suffix = shortid.generate()
-    let requested_url = req.body.url
-    let newShortURL = suffix
-    let newURL = new ShortURL({
-        short_url: __dirname + "/api/shorturl/" + suffix,
-        original_url: requested_url,
-        suffix: suffix
-    })
-    newURL.save(function(err, doc){
-        if (err) return console.error(err)
-    })
-    res.json({
-        "short_url": newURL.suffix,
-        "original_url": newURL.original_url,
-        //        "short_url" : newURL.short_url,
-        //        "suffix": newURL.suffix
-    })
-})
-app.get("/api/shorturl/:suffix", function(req,res) {
-    let generatedSuffix = req.params.suffix
-    ShortURL.find({suffix: generatedSuffix}).then(function(foundUrls){
-        let urlForRedirect = foundUrls[0]
-        res.redirect(urlForRedirect.original_url)
-    })
+let urlSchema = new mongoose.Schema({
+    original : {type: String, required: true},
+    short: Number
 })
 
+let Url = mongoose.model('Url', urlSchema)
+
+let responseObject = {}
+app.post('/api/shorturl', bodyParser.urlencoded({ extended: false }) , (request, response) => {
+  let inputUrl = request.body['url']
+  
+  let urlRegex = new RegExp(/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi)
+  
+  if(!inputUrl.match(urlRegex)){
+    response.json({error: 'invalid url'})
+    return
+  }
+
+  const httpRegex = /^(http|https)(:\/\/)/;
+  if (!httpRegex.test(inputUrl)) {
+    return response.json({ error: 'invalid url' })
+    }
+    
+  responseObject['original_url'] = inputUrl
+  
+  let inputShort = 1
+  
+  Url.findOne({})
+        .sort({short: 'desc'})
+        .exec((error, result) => {
+          if(!error && result != undefined){
+            inputShort = result.short + 1
+          }
+          if(!error){
+            Url.findOneAndUpdate(
+              {original: inputUrl},
+              {original: inputUrl, short: inputShort},
+              {new: true, upsert: true },
+              (error, savedUrl)=> {
+                if(!error){
+                  responseObject['short_url'] = savedUrl.short
+                  response.json(responseObject)
+                }
+              }
+            )
+          }
+  })
+  
+})
+
+app.get('/api/shorturl/:input', (request, response) => {
+  let input = request.params.input
+  
+  Url.findOne({short: input}, (error, result) => {
+    if(!error && result != undefined){
+      response.redirect(result.original)
+    }else{
+      response.json('URL not Found')
+    }
+  })
+})
 
 
 ////// General Settings for all Projects
